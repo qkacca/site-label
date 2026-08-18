@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Permissions &mdash; Site Label</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; padding:0 20px 80px; background:#fbfbfd; color:#1b1b1f;
+         font:16px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header { padding: 44px 0 8px; border-bottom: 1px solid #e4e4ea; margin-bottom: 28px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .sub { color:#63636c; margin:0; }
+  h2 { font-size:20px; margin:34px 0 10px; }
+  h3 { font-size:16px; margin:24px 0 8px; }
+  p, li { color:#2a2a31; }
+  ul { padding-left: 22px; }
+  li { margin: 5px 0; }
+  code { background:#f0f0f4; padding:1px 5px; border-radius:4px; font-size:.9em;
+         font-family: Consolas, "Cascadia Mono", monospace; }
+  pre { background:#f0f0f4; padding:14px 16px; border-radius:8px; overflow-x:auto; }
+  pre code { background:none; padding:0; }
+  table { border-collapse: collapse; width:100%; margin: 14px 0; font-size:15px; }
+  th, td { border:1px solid #e4e4ea; padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f4f4f8; }
+  hr { border:0; border-top:1px solid #e4e4ea; margin:28px 0; }
+  a { color:#1565c0; }
+  footer { margin-top:50px; padding-top:18px; border-top:1px solid #e4e4ea;
+           color:#77777f; font-size:14px; }
+  @media (prefers-color-scheme: dark) {
+    body { background:#161619; color:#ececf1; }
+    header, hr, th, td, footer { border-color:#33333a; }
+    .sub, footer { color:#a0a0a8; }
+    p, li { color:#dcdce2; }
+    code, pre, th { background:#232329; }
+    a { color:#6aa9f5; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Permissions</h1>
+  <p class="sub">What Site Label can access, and why it asks.</p>
+</header>
+<p>Short version: Site Label installs with access to <strong>no websites at all</strong>, and asks for one</p>
+<p>site at a time as you add it. It has no networking code, so nothing it sees can leave your</p>
+<p>browser.</p>
+<hr>
+<h2>The four fixed permissions</h2>
+<p>These are declared in the manifest and are always held. <strong>None of them can see a website.</strong></p>
+<p>Because none of them carries a user-facing warning, Edge shows no permission prompt when you</p>
+<p>install Site Label.</p>
+<table><thead><tr><th>Permission</th><th>What it allows</th><th>What Site Label uses it for</th></tr></thead><tbody>
+<tr><td><code>storage</code></td><td>Save data on this computer</td><td>Keeps your labels, groups, colours and settings. The only place anything is stored, and it never leaves the browser.</td></tr>
+<tr><td><code>scripting</code></td><td>Run a script on pages the extension already has access to</td><td>Draws the label on sites you have added. It cannot reach a site you have not granted.</td></tr>
+<tr><td><code>activeTab</code></td><td>See the current tab&#x27;s address, only when you click the toolbar icon</td><td>Lets the popup tell you which site you are on and suggest a label and scope. No access before the click, none after.</td></tr>
+<tr><td><code>contextMenus</code></td><td>Add a right-click menu item</td><td>Adds one entry, &quot;Label this site with Site Label&quot;.</td></tr>
+</tbody></table>
+<h2>The one permission you are asked about</h2>
+<p><code>optional_host_permissions: *://*/*</code> is declared as <strong>optional</strong>, which means it is never</p>
+<p>held on installation. Site Label cannot know in advance which sites you will want to</p>
+<p>label — they are usually private internal addresses — so instead of demanding access to</p>
+<p>everything up front, it asks for one specific site at the moment you add it.</p>
+<h3>Why the prompt sounds alarming</h3>
+<p>Edge will say:</p>
+<p>&gt; Read and change your data on uat.contoso.com</p>
+<p>That wording is not chosen by Site Label and cannot be changed by any extension. It is the</p>
+<p>only sentence Edge has for host access, and it describes the <strong>ceiling</strong> of what the</p>
+<p>permission could technically allow — not what this extension does with it.</p>
+<p>Site Label shows you, immediately before that prompt appears, exactly which addresses are</p>
+<p>about to be granted and what they are used for.</p>
+<h3>What Site Label actually does with site access</h3>
+<p>Two things:</p>
+<p>1. Adds one element to the page to draw your label.</p>
+<p>2. Reads the page&#x27;s address, to work out whether one of your labels applies to it.</p>
+<p>That is all. It does not read or change the page&#x27;s content, text, form fields, passwords or</p>
+<p>cookies.</p>
+<h3>What it does not do</h3>
+<ul>
+<li>No network requests of any kind. There is <strong>no</strong> <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>,</li>
+</ul>
+<p><code>EventSource</code> or <code>sendBeacon</code> anywhere in the shipped code, and no remote URL. This is</p>
+<p>enforced by a test (<code>tools/test-matcher.js</code>) that scans every shipped file and fails the</p>
+<p>build if any of them appears.</p>
+<ul>
+<li>No analytics, telemetry, crash reporting or tracking.</li>
+<li>No remote or generated code — no <code>eval</code>, no <code>new Function</code>, no external scripts. The</li>
+</ul>
+<p>extension&#x27;s content security policy is <code>script-src &#x27;self&#x27;</code>.</p>
+<ul>
+<li>No <code>innerHTML</code>, <code>insertAdjacentHTML</code> or <code>document.write</code>. Every element is built with</li>
+</ul>
+<p><code>createElement</code> and <code>textContent</code>, so no text can ever be parsed as markup.</p>
+<ul>
+<li>No access to your history, downloads, cookies, bookmarks or other tabs. Those permissions</li>
+</ul>
+<p>are not requested, so the APIs are simply unavailable.</p>
+<h3>Scope, per option</h3>
+<p>When you add a site you choose how far the rule reaches, and the grant follows it:</p>
+<table><thead><tr><th>You choose</th><th>Granted</th><th>Reaches</th></tr></thead><tbody>
+<tr><td>This site</td><td><code>https://uat.contoso.com/*</code></td><td>that exact scheme, host and port, and pages under it</td></tr>
+<tr><td>This section only</td><td><code>https://apps.contoso.com/tenant-a/*</code></td><td>see the note below</td></tr>
+<tr><td>All subdomains</td><td><code>*://contoso.com/*</code>, <code>*://*.contoso.com/*</code></td><td>the domain and every subdomain — the widest option</td></tr>
+<tr><td>This host, any scheme</td><td><code>*://uat.contoso.com/*</code></td><td>that host over http and https, any port</td></tr>
+<tr><td>Wildcard</td><td>closest whole-subdomain equivalent</td><td>see the note below</td></tr>
+</tbody></table>
+<p>Two honest caveats:</p>
+<ul>
+<li><strong>&quot;This section only&quot; narrows where the label appears, not what is granted.</strong> Browsers</li>
+</ul>
+<p>grant host access by site, not by folder, so the underlying permission still covers the</p>
+<p>whole site. If that matters to you, this option does not reduce the grant.</p>
+<ul>
+<li><strong>Wildcard patterns cannot be expressed exactly</strong> in a browser permission. Edge is given</li>
+</ul>
+<p>the nearest whole-subdomain equivalent, which may be broader than your pattern.</p>
+<h3>Withdrawing access</h3>
+<ul>
+<li>Delete a label and its access is released automatically, unless another label still needs it.</li>
+<li>Options → Settings → <strong>Site access</strong> lists everything Site Label can currently see, with a</li>
+</ul>
+<p>Remove button for each, and a &quot;Remove all site access&quot; button.</p>
+<ul>
+<li><code>edge://extensions</code> → Site Label → <strong>Site permissions</strong> gives you Edge&#x27;s own controls.</li>
+</ul>
+<p>Revoking access leaves your label rules intact; they simply stop being drawn until you grant</p>
+<p>access again.</p>
+<h2>Verifying all of this yourself</h2>
+<p>The extension is a few small, readable files with no build step and no minification — what</p>
+<p>you load is what you read. The claims above are checkable:</p>
+<pre><code>
+node tools/test-matcher.js
+</code></pre>
+<p>257 assertions, including the scan that fails if any networking or HTML-injection primitive</p>
+<p>is introduced.</p>
+<p>To read the source, the parts that touch the page are</p>
+<p><a href="src/content/label.js"><code>src/content/label.js</code></a> (the only code that runs on a website) and</p>
+<p><a href="src/background/service-worker.js"><code>src/background/service-worker.js</code></a> (which decides where</p>
+<p>that script is allowed to run).</p>
+<footer>Site Label &mdash; a Microsoft Edge extension. <a href="./">All documents</a></footer>
+</div>
+</body>
+</html>

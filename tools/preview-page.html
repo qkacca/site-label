@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Site Label - render harness</title>
+  <style>
+    body { margin: 0; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; color: #222; background: #fff; }
+    .fake-app { min-height: 100vh; }
+    .fake-nav { background: #0d5a8f; color: #fff; padding: 12px 24px; font-weight: 600; }
+    .fake-body { padding: 26px 24px; max-width: 760px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0; }
+    .controls button { padding: 6px 11px; font: inherit; cursor: pointer; border: 1px solid #bbb; border-radius: 6px; background: #f4f4f6; }
+    table { border-collapse: collapse; margin-top: 14px; }
+    td, th { border: 1px solid #ddd; padding: 6px 12px; text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="fake-app">
+    <div class="fake-nav">Contoso ERP &mdash; Accounts payable</div>
+    <div class="fake-body">
+      <h1>Render harness</h1>
+      <p>
+        This page stubs the <code>chrome.*</code> APIs and then loads the real content
+        script, so what you see below is exactly what the extension draws on a page.
+        Each button rewrites the stubbed storage and fires the change listener, which
+        also exercises the live-update path.
+      </p>
+      <div class="controls" id="controls"></div>
+      <table>
+        <tr><th>Vendor</th><th>Invoice</th><th>Amount</th></tr>
+        <tr><td>Fabrikam</td><td>INV-1042</td><td>12,400.00</td></tr>
+        <tr><td>Northwind</td><td>INV-1043</td><td>3,180.50</td></tr>
+        <tr><td>Tailspin</td><td>INV-1044</td><td>27,905.75</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    /* ---- test-only: keep a handle on closed shadow roots ----
+       attachShadow still returns the root even in closed mode; only
+       host.shadowRoot is withheld. Capturing the return value lets the
+       harness inspect and drive the overlay without weakening it - the
+       extension itself is unchanged and still closed to the page. */
+    const _attachShadow = Element.prototype.attachShadow;
+    window.__shadows = [];
+    Element.prototype.attachShadow = function (init) {
+      const root = _attachShadow.call(this, init);
+      window.__shadows.push(root);
+      return root;
+    };
+
+    /* ---- minimal chrome stub, enough for the content script ---- */
+    const listeners = { storage: [], message: [] };
+    let fakeState = null;
+
+    window.chrome = {
+      runtime: {
+        lastError: undefined,
+        sendMessage: function (msg, cb) { if (cb) cb({ ok: true }); },
+        onMessage: { addListener: function (fn) { listeners.message.push(fn); } }
+      },
+      storage: {
+        local: {
+          get: function (key, cb) { cb({ siteLabelState: fakeState }); },
+          // Writes are kept, so a dragged position round-trips exactly as it
+          // would through real extension storage.
+          set: function (obj, cb) {
+            if (obj && obj.siteLabelState) {
+              fakeState = obj.siteLabelState;
+              window.__lastWrite = fakeState;
+              listeners.storage.forEach(function (fn) {
+                fn({ siteLabelState: { newValue: fakeState } }, 'local');
+              });
+            }
+            if (cb) cb();
+          }
+        },
+        onChanged: { addListener: function (fn) { listeners.storage.push(fn); } }
+      }
+    };
+
+    function buildState(styleOverrides, label) {
+      return {
+        settings: { enabled: true, titlePrefix: false, badgeOnIcon: true, hideOnFullscreen: true },
+        groups: [],
+        sites: [{
+          id: 'harness',
+          label: label || 'UAT',
+          pattern: { type: 'origin', value: location.origin },
+          groupId: null,
+          style: styleOverrides,
+          enabled: true,
+          createdAt: Date.now()
+        }]
+      };
+    }
+
+    function apply(styleOverrides, label) {
+      fakeState = buildState(styleOverrides, label);
+      listeners.storage.forEach(function (fn) {
+        fn({ siteLabelState: { newValue: fakeState } }, 'local');
+      });
+    }
+
+    fakeState = buildState({ displayMode: 'ribbon-top-right' }, 'UAT');
+  </script>
+
+  <script src="../src/common/buddies.js"></script>
+  <script src="../src/common/schema.js"></script>
+  <script src="../src/common/matcher.js"></script>
+  <script src="../src/common/storage.js"></script>
+  <script src="../src/content/label.js"></script>
+
+  <script>
+    /* ---- one button per display mode ---- */
+    const cases = [
+      ['Ribbon TR', { displayMode: 'ribbon-top-right', background: '#e65100' }, 'UAT'],
+      ['Ribbon TL', { displayMode: 'ribbon-top-left', background: '#6a1b9a' }, 'TEST'],
+      ['Ribbon BR', { displayMode: 'ribbon-bottom-right', background: '#1565c0' }, 'DEV'],
+      ['Bar top', { displayMode: 'bar-top', background: '#c62828', showUrlHost: true }, 'PRODUCTION'],
+      ['Bar top pushed', { displayMode: 'bar-top', background: '#c62828', pushContent: true }, 'PRODUCTION'],
+      ['Bar bottom', { displayMode: 'bar-bottom', background: '#2e7d32' }, 'TRAINING'],
+      ['Frame', { displayMode: 'frame', background: '#c62828', frameWidth: 8 }, 'PRODUCTION'],
+      ['Frame + tab', { displayMode: 'frame-labelled', background: '#00695c', frameWidth: 6 }, 'SANDBOX'],
+      ['Badge TR', { displayMode: 'badge-top-right', background: '#283593' }, 'BUILD'],
+      ['Badge BL', { displayMode: 'badge-bottom-left', background: '#ad1457' }, 'SUPPORT'],
+      ['Watermark', { displayMode: 'watermark', background: '#c62828' }, 'DO NOT POST'],
+      ['Stripes', { displayMode: 'bar-top', background: '#f9a825', textColor: '#1a1a1a', stripes: true }, 'FROZEN'],
+      ['Long text', { displayMode: 'ribbon-top-right', background: '#37474f' }, 'CONTOSO UAT 2'],
+      ['Gold', { displayMode: 'badge-top-right', background: '#d4a017', textColor: '#1a1a1a' }, 'GOLD'],
+      ['Size 60%', { displayMode: 'ribbon-top-right', background: '#c62828', scale: 0.6 }, 'SMALL'],
+      ['Size 200%', { displayMode: 'ribbon-top-right', background: '#c62828', scale: 2 }, 'BIG'],
+      ['Unlocked badge', { displayMode: 'badge-top-right', background: '#6a1b9a', locked: false }, 'DRAG ME'],
+      ['Unlocked ribbon', { displayMode: 'ribbon-top-right', background: '#e65100', locked: false }, 'DRAG ME'],
+      ['Glow bar', { displayMode:'bar-top', background:'#c62828', glow:true, glowSpeed:4 }, 'PRODUCTION'],
+      ['Glow ribbon fast', { displayMode:'ribbon-top-right', background:'#d4a017', textColor:'#1a1a1a', glow:true, glowSpeed:10 }, 'GOLD'],
+      ['Glow ribbon slow', { displayMode:'ribbon-top-right', background:'#e65100', glow:true, glowSpeed:1 }, 'UAT'],
+      ['Glow frame', { displayMode:'frame', background:'#c62828', glow:true, frameWidth:8 }, 'PRODUCTION'],
+      ['Glow watermark', { displayMode:'watermark', background:'#c62828', glow:true }, 'DO NOT POST'],
+      ['Transparent 60%', { displayMode:'bar-top', background:'#1565c0', opacity:0.4 }, 'DEV'],
+      ['Edge top', { displayMode:'edge-top', background:'#c62828' }, 'PRODUCTION'],
+      ['Edge bottom', { displayMode:'edge-bottom', background:'#2e7d32' }, 'TRAINING'],
+      ['Side left', { displayMode:'side-left', background:'#6a1b9a' }, 'TEST'],
+      ['Side right', { displayMode:'side-right', background:'#e65100' }, 'UAT'],
+      ['Corner brackets', { displayMode:'corners', background:'#c62828', frameWidth:6 }, 'PRODUCTION'],
+      ['Pill top', { displayMode:'pill-top-center', background:'#d4a017', textColor:'#1a1a1a' }, 'GOLD ENV'],
+      ['Pill bottom', { displayMode:'pill-bottom-center', background:'#00695c' }, 'SANDBOX'],
+      ['Buddy: cone', { displayMode:'buddy', buddy:'cone', background:'#c62828' }, 'PRODUCTION'],
+      ['Buddy: penguin', { displayMode:'buddy', buddy:'penguin', background:'#e65100' }, 'UAT'],
+      ['Buddy: bunny', { displayMode:'buddy', buddy:'bunny', background:'#6a1b9a' }, 'TEST'],
+      ['Buddy: bee', { displayMode:'buddy', buddy:'bee', background:'#1565c0' }, 'DEV'],
+      ['Buddy: jellyfish', { displayMode:'buddy', buddy:'jellyfish', background:'#00695c' }, 'SANDBOX'],
+      ['Buddy: corgi', { displayMode:'buddy', buddy:'corgi', background:'#ad1457' }, 'DEMO'],
+      ['Buddy: cloud', { displayMode:'buddy', buddy:'cloud', background:'#37474f' }, 'STAGING'],
+      ['Buddy: moon', { displayMode:'buddy', buddy:'moon', background:'#283593' }, 'LOCAL'],
+      ['Buddy: plant', { displayMode:'buddy', buddy:'plant', background:'#2e7d32' }, 'TRAINING'],
+      ['Buddy: cat', { displayMode:'buddy', buddy:'cat', background:'#8d6e2f' }, 'DEMO'],
+      ['Buddy: unlocked', { displayMode:'buddy', buddy:'bunny', background:'#6a1b9a', locked:false }, 'RESIZE ME'],
+      ['Meme: impact', { displayMode:'meme-impact', background:'#c62828' }, 'ONE DOES NOT SIMPLY DEPLOY'],
+      ['Meme: hazard', { displayMode:'meme-hazard', background:'#c62828' }, 'PRODUCTION'],
+      ['Meme: stamp', { displayMode:'meme-stamp', background:'#e65100' }, 'UAT APPROVED'],
+      ['Meme: glitch', { displayMode:'meme-glitch', background:'#6a1b9a' }, 'TEST'],
+      ['Meme: terminal', { displayMode:'meme-terminal', background:'#2e7d32' }, 'DEV'],
+      ['Off', null, null]
+    ];
+
+    const box = document.getElementById('controls');
+    cases.forEach(function (entry) {
+      const button = document.createElement('button');
+      button.textContent = entry[0];
+      button.addEventListener('click', function () {
+        if (!entry[1]) {
+          fakeState = { settings: { enabled: false }, groups: [], sites: [] };
+          listeners.storage.forEach(function (fn) {
+            fn({ siteLabelState: { newValue: fakeState } }, 'local');
+          });
+          return;
+        }
+        apply(entry[1], entry[2]);
+      });
+      box.appendChild(button);
+    });
+  </script>
+</body>
+</html>

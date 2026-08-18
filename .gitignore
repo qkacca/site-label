@@ -1,0 +1,7 @@
+# build output - rebuilt with tools/package.py
+dist/
+
+# OS noise
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Site Label - screenshot studio</title>
+<style>
+  body { margin:0; padding:22px; background:#f4f5f7; color:#1b1b1f;
+         font:14px "Segoe UI", system-ui, sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  p.lead { color:#62636a; margin:0 0 18px; max-width:70ch; }
+  .shot { background:#fff; border:1px solid #e2e2e8; border-radius:10px;
+          padding:14px; margin-bottom:18px; }
+  .shot h2 { font-size:15px; margin:0 0 2px; }
+  .shot p { color:#62636a; margin:0 0 10px; font-size:13px; }
+  canvas { width:100%; max-width:820px; height:auto; border:1px solid #dcdce2;
+           border-radius:6px; display:block; }
+  button { margin-top:10px; padding:8px 16px; font:inherit; font-weight:600; cursor:pointer;
+           background:#1565c0; color:#fff; border:none; border-radius:7px; }
+  button.all { background:#2e7d32; margin-bottom:18px; padding:10px 20px; }
+  .note { background:#fff8e1; border:1px solid #ffe08a; border-radius:8px;
+          padding:10px 14px; margin-bottom:18px; font-size:13px; max-width:70ch; }
+</style>
+</head>
+<body>
+<h1>Screenshot studio</h1>
+<p class="lead">
+  Each canvas below is exactly 1280&times;800, the size Partner Center wants. They are drawn
+  on a canvas rather than captured from the screen, so the exported PNG is pixel-exact
+  whatever your display scaling is set to. Click a button to save that shot.
+</p>
+<div class="note">
+  These are honest depictions of the real styles &mdash; the same geometry, colours and
+  wording the extension draws. Hostnames are all <code>contoso.com</code>, so no customer
+  environment appears in the store listing.
+</div>
+
+<button class="all" onclick="saveAll()">Download all five</button>
+<div id="shots"></div>
+
+<script>
+const W = 1280, H = 800;
+
+/* ---------- small drawing helpers ---------- */
+function rr(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function shadow(c, blur, y, a) {
+  c.shadowColor = 'rgba(0,0,0,' + a + ')';
+  c.shadowBlur = blur; c.shadowOffsetY = y;
+}
+function noShadow(c) { c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetY = 0; }
+
+/* A believable ERP screen to sit the label on. */
+function drawApp(c, opts) {
+  opts = opts || {};
+  const x = opts.x || 0, y = opts.y || 0, w = opts.w || W, h = opts.h || H;
+  c.save();
+  c.beginPath(); c.rect(x, y, w, h); c.clip();
+
+  c.fillStyle = '#ffffff'; c.fillRect(x, y, w, h);
+
+  // top command bar
+  c.fillStyle = opts.brand || '#0d5a8f';
+  c.fillRect(x, y, w, 52);
+  c.fillStyle = '#ffffff';
+  c.font = '600 17px "Segoe UI", sans-serif';
+  c.fillText(opts.title || 'Contoso ERP  —  Accounts payable', x + 24, y + 33);
+
+  // left nav
+  c.fillStyle = '#f3f4f6'; c.fillRect(x, y + 52, 190, h - 52);
+  c.fillStyle = '#5a6472'; c.font = '14px "Segoe UI", sans-serif';
+  ['Dashboard','Vendors','Invoices','Payments','Journals','Reports','Settings']
+    .forEach(function (t, i) { c.fillText(t, x + 22, y + 92 + i * 34); });
+  c.fillStyle = '#dfe3e8'; c.fillRect(x + 12, y + 78 + 34, 166, 26);
+  c.fillStyle = '#26313d'; c.font = '600 14px "Segoe UI", sans-serif';
+  c.fillText('Vendors', x + 22, y + 92 + 34);
+
+  // content heading
+  c.fillStyle = '#1b1b1f'; c.font = '600 24px "Segoe UI", sans-serif';
+  c.fillText(opts.heading || 'Open vendor invoices', x + 224, y + 100);
+
+  // table
+  const tx = x + 224, ty = y + 130, tw = w - 224 - 40;
+  c.fillStyle = '#f7f8fa'; c.fillRect(tx, ty, tw, 38);
+  c.fillStyle = '#5a6472'; c.font = '600 13px "Segoe UI", sans-serif';
+  ['Vendor','Invoice','Due date','Amount','Status'].forEach(function (t, i) {
+    c.fillText(t, tx + 16 + i * (tw / 5), ty + 25);
+  });
+  // Enough rows to fill an 800px screen, so the shot looks like real work.
+  const names = ['Fabrikam Ltd','Northwind Traders','Tailspin Toys','Litware Inc','Proseware',
+                 'Adventure Works','Contoso Retail','Wingtip Toys','Woodgrove Bank',
+                 'Alpine Ski House','Lucerne Publishing','Trey Research','Graphic Design Inst'];
+  const amounts = ['12,400.00','3,180.50','27,905.75','1,045.00','8,730.20','15,260.00',
+                   '640.75','19,880.00','2,415.60','7,090.45','33,120.00','980.00','5,275.30'];
+  const states = ['Pending','Approved','Pending','On hold','Approved','Pending','Approved',
+                  'Pending','Approved','On hold','Pending','Approved','Pending'];
+  const rows = names.map(function (n, i) {
+    return [n, 'INV-1042' + (71 + i), (10 + i) + ' Sep 2026', amounts[i], states[i]];
+  });
+  rows.forEach(function (row, r) {
+    const ry = ty + 38 + r * 42;
+    if (r % 2) { c.fillStyle = '#fafbfc'; c.fillRect(tx, ry, tw, 42); }
+    c.fillStyle = '#e6e8ec'; c.fillRect(tx, ry + 41, tw, 1);
+    row.forEach(function (cell, i) {
+      
+      c.fillStyle = i === 3 ? '#1b1b1f' : '#3c4450';
+      c.font = (i === 3 ? '600 14px' : '14px') + ' "Segoe UI", sans-serif';
+      c.fillText(cell, tx + 16 + i * (tw / 5), ry + 27);
+    });
+  });
+  c.restore();
+}
+
+/* ---------- the label styles, drawn as the extension draws them ---------- */
+
+function drawRibbon(c, corner, text, bg, fg, box) {
+  box = box || 190;
+  const band = box * 1.46, off = box * 0.19, padY = 13;
+  const left = corner.indexOf('l') !== -1, top = corner.indexOf('t') !== -1;
+  const bx = left ? 0 : W - box, by = top ? 0 : H - box;
+  c.save();
+  c.beginPath(); c.rect(bx, by, box, box); c.clip();
+  c.translate(bx + box / 2 + (left ? -off : off), by + box / 2 + (top ? -off : off));
+  c.rotate(((left && top) || (!left && !top) ? -45 : 45) * Math.PI / 180);
+  shadow(c, 10, 2, .4);
+  c.fillStyle = bg;
+  c.fillRect(-band / 2, -(padY + 11), band, (padY + 11) * 2);
+  noShadow(c);
+  c.fillStyle = fg;
+  c.font = '700 21px "Segoe UI", sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(text, 0, 1);
+  c.restore();
+}
+
+function drawHazard(c, text, bg) {
+  const h = 46;
+  c.save();
+  c.fillStyle = bg; c.fillRect(0, 0, W, h);
+  c.beginPath(); c.rect(0, 0, W, h); c.clip();
+  c.strokeStyle = 'rgba(0,0,0,.82)'; c.lineWidth = 16;
+  for (let i = -h; i < W + h; i += 32) {
+    c.beginPath(); c.moveTo(i, h + 6); c.lineTo(i + h + 12, -6); c.stroke();
+  }
+  c.restore();
+  c.save();
+  c.fillStyle = '#fff'; c.font = '700 19px "Segoe UI", sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  shadow(c, 4, 1, .95);
+  c.fillText(text, W / 2, h / 2 + 1);
+  c.restore();
+}
+
+function drawStamp(c, text, colour) {
+  c.save();
+  c.translate(W - 210, 108); c.rotate(-13 * Math.PI / 180);
+  c.font = '800 22px "Segoe UI", sans-serif';
+  const tw = c.measureText(text).width, pad = 22;
+  c.strokeStyle = colour; c.lineWidth = 5;
+  rr(c, -tw / 2 - pad, -30, tw + pad * 2, 60, 6); c.stroke();
+  c.lineWidth = 2;
+  rr(c, -tw / 2 - pad - 7, -37, tw + pad * 2 + 14, 74, 8); c.stroke();
+  c.fillStyle = colour; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(text, 0, 1);
+  c.restore();
+}
+
+function drawTerminal(c, text, x, y) {
+  c.save();
+  c.font = '600 16px Consolas, "Cascadia Mono", monospace';
+  const label = '> ' + text, tw = c.measureText(label).width;
+  shadow(c, 10, 2, .5);
+  c.fillStyle = '#0b0f0c'; rr(c, x, y, tw + 44, 38, 4); c.fill();
+  noShadow(c);
+  c.strokeStyle = '#2f6f45'; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = '#7fe3a0'; c.textBaseline = 'middle';
+  c.fillText(label, x + 14, y + 20);
+  c.fillRect(x + 20 + tw, y + 11, 9, 17);
+  c.restore();
+}
+
+function drawBadge(c, text, bg, fg, x, y) {
+  c.save();
+  c.font = '700 16px "Segoe UI", sans-serif';
+  const tw = c.measureText(text).width;
+  shadow(c, 9, 2, .35);
+  c.fillStyle = bg; rr(c, x, y, tw + 34, 36, 18); c.fill();
+  noShadow(c);
+  c.fillStyle = fg; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(text, x + (tw + 34) / 2, y + 19);
+  c.restore();
+}
+
+function drawImpact(c, text) {
+  c.save();
+  c.font = '400 46px Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 7; c.strokeStyle = '#000'; c.lineJoin = 'round';
+  c.strokeText(text, W / 2, 62);
+  c.fillStyle = '#fff'; c.fillText(text, W / 2, 62);
+  c.restore();
+}
+
+function drawCorners(c, colour, text) {
+  const n = 58, t = 7;
+  c.save(); c.fillStyle = colour;
+  [[0,0,1,1],[W-n,0,-1,1],[0,H-n,1,-1],[W-n,H-n,-1,-1]].forEach(function (p) {
+    const x = p[0], y = p[1];
+    c.fillRect(x, p[3] > 0 ? y : y + n - t, n, t);
+    c.fillRect(p[2] > 0 ? x : x + n - t, y, t, n);
+  });
+  c.restore();
+  drawBadge(c, text, colour, '#fff', W / 2 - 70, 18);
+}
+
+/* ---------- the five shots ---------- */
+const SHOTS = [
+  {
+    id: 'hero',
+    title: '1. The problem, solved',
+    note: 'A red PRODUCTION ribbon over a realistic ERP screen. Use this as the store tile.',
+    draw: function (c) {
+      drawApp(c, {});
+      drawRibbon(c, 'tr', 'PRODUCTION', '#c62828', '#ffffff');
+    }
+  },
+  {
+    id: 'side-by-side',
+    title: '2. Two environments, side by side',
+    note: 'The core value: identical screens, impossible to confuse.',
+    draw: function (c) {
+      c.fillStyle = '#e9ebef'; c.fillRect(0, 0, W, H);
+      const gw = (W - 54) / 2, gh = H - 36;
+      [{ x: 18, bg: '#e65100', label: 'UAT' }, { x: 36 + gw, bg: '#c62828', label: 'PRODUCTION' }]
+        .forEach(function (p) {
+          c.save();
+          shadow(c, 22, 6, .22);
+          c.fillStyle = '#fff'; rr(c, p.x, 18, gw, gh, 10); c.fill();
+          noShadow(c);
+          c.beginPath(); rr(c, p.x, 18, gw, gh, 10); c.clip();
+          c.translate(p.x, 18);
+          const sub = { x: 0, y: 0, w: gw, h: gh };
+          c.save(); c.beginPath(); c.rect(0, 0, gw, gh); c.clip();
+          c.scale(gw / W, gh / H);
+          drawApp(c, {});
+          c.restore();
+          // ribbon scaled into the pane
+          c.save(); c.beginPath(); c.rect(0, 0, gw, gh); c.clip();
+          const box = 150, band = box * 1.46, off = box * 0.19;
+          c.translate(gw - box / 2 + off, box / 2 - off);
+          c.rotate(45 * Math.PI / 180);
+          c.fillStyle = p.bg; c.fillRect(-band / 2, -21, band, 42);
+          c.fillStyle = '#fff'; c.font = '700 17px "Segoe UI", sans-serif';
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.fillText(p.label, 0, 1);
+          c.restore();
+          c.restore();
+        });
+    }
+  },
+  {
+    id: 'styles',
+    title: '3. A style for every taste',
+    note: 'Shows the range: hazard tape, stamp, terminal, badge, corner brackets.',
+    draw: function (c) {
+      drawApp(c, { title: 'Contoso ERP  —  General ledger', heading: 'Journal entries' });
+      drawHazard(c, 'PRODUCTION  —  CHANGES ARE LIVE', '#c62828');
+      drawStamp(c, 'UAT APPROVED', '#e65100');
+      drawTerminal(c, 'DEV', 250, H - 82);
+      drawBadge(c, 'SANDBOX', '#00695c', '#ffffff', 250, 92);
+    }
+  },
+  {
+    id: 'meme',
+    title: '4. Meme-inspired styles',
+    note: 'The Impact caption and corner brackets, both matched to environments.',
+    draw: function (c) {
+      drawApp(c, { title: 'Contoso ERP  —  Fixed assets', heading: 'Asset register', brand: '#3b2d6b' });
+      drawCorners(c, '#6a1b9a', 'TEST');
+      drawImpact(c, 'ONE DOES NOT SIMPLY DEPLOY');
+    }
+  },
+  {
+    id: 'discreet',
+    title: '5. Discreet by default',
+    note: 'Corner brackets and a side tab cover under a quarter of one percent of the screen.',
+    draw: function (c) {
+      drawApp(c, { title: 'Contoso ERP  —  Procurement', heading: 'Purchase orders', brand: '#1f6f5c' });
+      drawCorners(c, '#2e7d32', 'TRAINING');
+      c.save();
+      c.translate(W - 30, H / 2); c.rotate(Math.PI / 2);
+      c.font = '700 16px "Segoe UI", sans-serif';
+      const t = 'TRAINING', tw = c.measureText(t).width;
+      shadow(c, 8, 2, .3);
+      c.fillStyle = '#2e7d32'; rr(c, -tw / 2 - 18, -18, tw + 36, 34, 6); c.fill();
+      noShadow(c);
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(t, 0, 0);
+      c.restore();
+    }
+  }
+];
+
+/* ---------- build the page ---------- */
+const host = document.getElementById('shots');
+SHOTS.forEach(function (shot) {
+  const wrap = document.createElement('div');
+  wrap.className = 'shot';
+  const h2 = document.createElement('h2'); h2.textContent = shot.title;
+  const p = document.createElement('p'); p.textContent = shot.note;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H; cv.id = 'cv-' + shot.id;
+  const btn = document.createElement('button');
+  btn.textContent = 'Download ' + shot.id + '.png';
+  btn.onclick = function () { save(shot.id); };
+  wrap.appendChild(h2); wrap.appendChild(p); wrap.appendChild(cv); wrap.appendChild(btn);
+  host.appendChild(wrap);
+  shot.draw(cv.getContext('2d'));
+});
+
+function save(id) {
+  const cv = document.getElementById('cv-' + id);
+  cv.toBlob(function (blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'site-label-' + id + '-1280x800.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }, 'image/png');
+}
+function saveAll() { SHOTS.forEach(function (s, i) { setTimeout(function () { save(s.id); }, i * 500); }); }
+</script>
+</body>
+</html>

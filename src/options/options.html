@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Site Label - options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo"></span>
+      <div>
+        <h1>Site Label</h1>
+        <p class="muted small">Colour-coded labels so you always know which environment you are in.</p>
+      </div>
+    </div>
+    <label class="switch" title="Turn all labels on or off">
+      <input type="checkbox" id="globalToggle">
+      <span class="track"><span class="knob"></span></span>
+      <span class="switch-text" id="globalToggleText">Labels on</span>
+    </label>
+  </header>
+
+  <div id="welcome" class="banner" hidden>
+    <p><strong>Welcome.</strong> Open any site, click the Site Label icon, and add a label.</p>
+    <p class="small">
+      Site Label starts with access to <strong>no websites at all</strong>. It asks for one
+      site at a time, as you add it, and tells you exactly what is being granted first. When
+      Edge asks, it will say “Read and change your data on…” — that is the only wording Edge
+      has for site access, and it describes what the permission could allow rather than what
+      this extension does. All Site Label does with it is draw your label. It has no
+      networking code, so nothing it sees can go anywhere.
+      See <strong>Settings</strong> for the full list of permissions and what each is for.
+    </p>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button type="button" class="tab" data-tab="sites">Sites</button>
+    <button type="button" class="tab" data-tab="groups">Groups</button>
+    <button type="button" class="tab" data-tab="transfer">Import / export</button>
+    <button type="button" class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- ------------------------------------------------ Sites -->
+  <main id="panel-sites" class="panel" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>Labelled sites</h2>
+        <p class="muted small" id="sitesSummary"></p>
+      </div>
+      <div class="head-actions">
+        <input type="search" id="siteSearch" placeholder="Search sites…" aria-label="Search sites">
+        <button type="button" id="addSiteBtn" class="primary">Add a site</button>
+      </div>
+    </div>
+
+    <form id="addSiteForm" class="card form-card" hidden>
+      <h3>Add a site</h3>
+      <div class="grid2">
+        <div class="field">
+          <label class="label-text" for="newSiteUrl">Address</label>
+          <input type="text" id="newSiteUrl" placeholder="https://uat.contoso.com" autocomplete="off">
+          <p class="muted small">Paste any page address - Site Label works out the base site.</p>
+        </div>
+        <div class="field">
+          <label class="label-text" for="newSiteScope">Apply to</label>
+          <select id="newSiteScope"></select>
+        </div>
+        <div class="field">
+          <label class="label-text" for="newSiteLabel">Label text</label>
+          <input type="text" id="newSiteLabel" maxlength="60" placeholder="e.g. UAT">
+        </div>
+        <div class="field">
+          <label class="label-text" for="newSiteGroup">Group</label>
+          <select id="newSiteGroup"></select>
+        </div>
+      </div>
+      <div class="consent small" id="newSiteConsent"></div>
+      <div class="actions">
+        <button type="submit" class="primary">Add and request access</button>
+        <button type="button" id="cancelAddSite" class="ghost">Cancel</button>
+      </div>
+      <p class="error small" id="addSiteError" hidden></p>
+    </form>
+
+    <div id="sitesList" class="list"></div>
+    <p id="sitesEmpty" class="empty" hidden>
+      No sites labelled yet. Visit a site and use the toolbar icon, or add one above.
+    </p>
+  </main>
+
+  <!-- ------------------------------------------------ Groups -->
+  <main id="panel-groups" class="panel" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>Groups</h2>
+        <p class="muted small">A group holds a look - colour, position, size - that its sites inherit.</p>
+      </div>
+      <button type="button" id="addGroupBtn" class="primary">New group</button>
+    </div>
+    <div id="groupsList" class="list"></div>
+    <p id="groupsEmpty" class="empty" hidden>No groups yet.</p>
+  </main>
+
+  <!-- ------------------------------------------------ Transfer -->
+  <main id="panel-transfer" class="panel" hidden>
+    <div class="two-col">
+      <section class="card">
+        <h2>Export</h2>
+        <p class="muted small">
+          Save groups and their sites to a file you can hand to the rest of the team.
+          Only labels and styling are exported - never browsing history or page data.
+        </p>
+        <div id="exportChoices" class="checks"></div>
+        <div class="actions">
+          <button type="button" id="exportBtn" class="primary">Export selected</button>
+          <button type="button" id="exportAllBtn" class="ghost">Export everything</button>
+        </div>
+        <p class="status small" id="exportStatus" hidden></p>
+      </section>
+
+      <section class="card">
+        <h2>Import</h2>
+        <p class="muted small">
+          Choose an export file. Nothing is saved until you have seen what it contains
+          and confirmed. Access to each site is still requested separately afterwards.
+        </p>
+        <input type="file" id="importFile" accept="application/json,.json">
+        <div id="importReport" class="report" hidden></div>
+        <div class="actions" id="importActions" hidden>
+          <button type="button" id="importMergeBtn" class="primary">Add to my list</button>
+          <button type="button" id="importReplaceBtn" class="danger">Replace my list</button>
+          <button type="button" id="importCancelBtn" class="ghost">Cancel</button>
+        </div>
+        <p class="error small" id="importError" hidden></p>
+        <p class="status small" id="importStatus" hidden></p>
+      </section>
+    </div>
+  </main>
+
+  <!-- ------------------------------------------------ Settings -->
+  <main id="panel-settings" class="panel" hidden>
+    <section class="card">
+      <h2>Behaviour</h2>
+      <label class="check"><input type="checkbox" id="setTitlePrefix">
+        <span>Prefix the tab title with the label, so it shows in the taskbar and in screenshots</span></label>
+      <label class="check"><input type="checkbox" id="setBadge">
+        <span>Show the label on the toolbar icon</span></label>
+      <label class="check"><input type="checkbox" id="setFullscreen">
+        <span>Hide the label while a page is full screen</span></label>
+
+      <div class="field" style="margin-top:14px">
+        <label class="label-text" for="setTheme">Appearance of Site Label's own screens</label>
+        <select id="setTheme">
+          <option value="auto">Match the browser</option>
+          <option value="light">Always light</option>
+          <option value="dark">Always dark</option>
+        </select>
+        <p class="muted small">
+          "Match the browser" follows your dark mode setting. Choose one explicitly if
+          Edge's appearance and your Windows setting disagree.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Custom colours</h2>
+      <p class="muted small">
+        Colours you save appear alongside the presets everywhere you pick a colour.
+      </p>
+      <div class="row gap tight">
+        <label class="mini">Background <input type="color" id="newCustomBg" value="#d4a017"></label>
+        <label class="mini">Text <input type="color" id="newCustomFg" value="#1a1a1a"></label>
+        <button type="button" id="addCustomColor">Add to palette</button>
+      </div>
+      <div id="customColorList" class="list compact"></div>
+    </section>
+
+    <section class="card">
+      <h2>What Site Label can access</h2>
+      <p class="muted small">
+        Every permission this extension holds, and what each one is for. Four of them are
+        fixed and none of those can see a website. The fifth is site access, which is asked
+        for one site at a time as you add it.
+      </p>
+      <div id="permissionInfo" class="perm-table"></div>
+      <p class="muted small trust-note">
+        Site Label contains no networking code of any kind — no requests, no analytics, no
+        tracking, no remote scripts — so nothing it sees can be sent anywhere. Your labels
+        leave this browser only if you export them to a file yourself.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Site access</h2>
+      <p class="muted small">
+        These are the sites Site Label can currently see. Removing access here leaves the
+        label rule in place but stops it being drawn until you grant access again. Deleting
+        a label releases its access automatically.
+      </p>
+      <div id="permissionsList" class="list compact"></div>
+      <div class="actions">
+        <button type="button" id="revokeAllBtn" class="ghost">Remove all site access</button>
+      </div>
+    </section>
+
+    <section class="card danger-zone">
+      <h2>Reset</h2>
+      <p class="muted small">Deletes every site, group and setting, and hands back all site access.</p>
+      <div class="actions">
+        <button type="button" id="resetBtn" class="danger">Delete everything</button>
+      </div>
+      <p class="status small" id="resetStatus" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Keyboard</h2>
+      <p class="muted small">
+        <strong>Alt+Shift+L</strong> hides or shows the label on the current tab.
+        <strong>Alt+Shift+S</strong> opens the Site Label popup. Change these at
+        <code>edge://extensions/shortcuts</code>.
+      </p>
+    </section>
+  </main>
+
+  <!-- ------------------------------------------------ Editor dialog -->
+  <dialog id="editor">
+    <form method="dialog" id="editorForm">
+      <h2 id="editorTitle">Edit</h2>
+
+      <div class="grid2">
+        <div class="field" id="editorLabelField">
+          <label class="label-text" for="editorLabel" id="editorLabelCaption">Label text</label>
+          <input type="text" id="editorLabel" maxlength="60">
+        </div>
+        <div class="field" id="editorGroupField">
+          <label class="label-text" for="editorGroup">Group</label>
+          <select id="editorGroup"></select>
+        </div>
+      </div>
+
+      <div class="field" id="editorPatternField">
+        <label class="label-text" for="editorPatternValue">Applies to</label>
+        <div class="row gap">
+          <select id="editorPatternType">
+            <option value="origin">This site (scheme + host)</option>
+            <option value="host">This host, any scheme</option>
+            <option value="host-suffix">Host and all subdomains</option>
+            <option value="prefix">Address starting with</option>
+            <option value="wildcard">Pattern with *</option>
+          </select>
+          <input type="text" id="editorPatternValue" class="grow">
+        </div>
+        <p class="muted small" id="editorPatternHelp"></p>
+      </div>
+
+      <div class="editor-split">
+        <div>
+          <div class="field">
+            <label class="label-text" for="editorMode">Display</label>
+            <select id="editorMode"></select>
+          </div>
+
+          <div class="field buddy-box" id="editorBuddyBox" hidden>
+            <label class="label-text" for="editorBuddy">Character</label>
+            <select id="editorBuddy"></select>
+            <p class="muted small" id="editorBuddyBlurb"></p>
+            <label class="check"><input type="checkbox" id="editorBuddyChatter">
+              <span>Do its little routine now and then</span></label>
+            <label class="label-text" for="editorBuddyInterval">How often <output id="editorBuddyIntervalOut"></output></label>
+            <input type="range" id="editorBuddyInterval" min="5" max="600" step="5">
+          </div>
+
+          <div class="field">
+            <span class="label-text">Colour</span>
+            <div class="swatches" id="editorSwatches"></div>
+            <div class="row gap tight">
+              <label class="mini">Background <input type="color" id="editorBg"></label>
+              <label class="mini">Text <input type="color" id="editorFg"></label>
+              <button type="button" id="editorSaveColor" class="tiny">Save to palette</button>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <label class="mini col">Overall size
+              <input type="range" id="editorScale" min="50" max="300" step="5">
+              <output id="editorScaleOut"></output>
+            </label>
+            <label class="mini col">Text size
+              <input type="range" id="editorFontSize" min="8" max="32" step="1">
+              <output id="editorFontSizeOut"></output>
+            </label>
+            <label class="mini col">Transparency
+              <input type="range" id="editorTransparency" min="0" max="85" step="5">
+              <output id="editorTransparencyOut"></output>
+            </label>
+            <label class="mini col">Glow speed
+              <input type="range" id="editorGlowSpeed" min="1" max="10" step="1">
+              <output id="editorGlowSpeedOut"></output>
+            </label>
+            <label class="mini col">Bar height
+              <input type="range" id="editorBarHeight" min="16" max="64" step="2">
+              <output id="editorBarHeightOut"></output>
+            </label>
+            <label class="mini col">Frame width
+              <input type="range" id="editorFrameWidth" min="2" max="24" step="1">
+              <output id="editorFrameWidthOut"></output>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <span class="label-text">Preview</span>
+          <div class="preview big" id="editorPreview"><span class="preview-page">page content</span></div>
+
+          <label class="check"><input type="checkbox" id="editorBold"><span>Bold text</span></label>
+          <label class="check"><input type="checkbox" id="editorUppercase"><span>Upper case</span></label>
+          <label class="check"><input type="checkbox" id="editorStripes"><span>Diagonal stripes</span></label>
+          <label class="check"><input type="checkbox" id="editorGlow">
+            <span><strong>Glow.</strong> A light runs continuously across the label. Use the glow
+            speed slider to set how quickly.</span></label>
+          <label class="check"><input type="checkbox" id="editorShowHost"><span>Show the host name under the label</span></label>
+          <label class="check"><input type="checkbox" id="editorPush"><span>Push the page down instead of covering it (bars only)</span></label>
+          <label class="check"><input type="checkbox" id="editorClickDismiss"><span>Let a click on the label hide it for that tab</span></label>
+          <label class="check"><input type="checkbox" id="editorLocked">
+            <span><strong>Lock in place.</strong> Unlock to drag the label around the page with the mouse.</span></label>
+          <p class="muted small" id="editorPosNote" hidden></p>
+          <button type="button" id="editorResetPos" class="tiny" hidden>Reset to default position</button>
+        </div>
+      </div>
+
+      <p class="error small" id="editorError" hidden></p>
+      <div class="actions end">
+        <button type="button" id="editorCancel" class="ghost">Cancel</button>
+        <button type="button" id="editorSave" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="../common/buddies.js"></script>
+  <script src="../common/schema.js"></script>
+  <script src="../common/matcher.js"></script>
+  <script src="../common/storage.js"></script>
+  <script src="../common/preview.js"></script>
+  <script src="../common/consent.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

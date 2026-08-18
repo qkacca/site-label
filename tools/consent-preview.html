@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Site Label - permission wording preview</title>
+  <link rel="stylesheet" href="../src/options/options.css">
+  <style>
+    body { padding: 24px; }
+    .case { margin-bottom: 22px; }
+    .case h3 { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Permission wording</h1>
+  <p class="muted small">
+    Renders the same explainer the popup and options page show immediately before Edge's
+    own permission prompt, for each scope a user can pick. Proof-reading aid; not shipped.
+  </p>
+
+  <h2>Fixed permission set</h2>
+  <div id="permissionInfo" class="perm-table"></div>
+
+  <h2>Pre-prompt explainer, per scope</h2>
+  <div id="cases"></div>
+
+  <script src="../src/common/buddies.js"></script>
+  <script src="../src/common/schema.js"></script>
+  <script src="../src/common/matcher.js"></script>
+  <script src="../src/common/consent.js"></script>
+  <script src="../src/common/preview.js"></script>
+  <script>
+    /* the fixed permission list, as the options page renders it */
+    const box = document.getElementById('permissionInfo');
+    SL.PERMISSIONS.forEach(function (perm) {
+      const row = document.createElement('div');
+      row.className = 'perm-row';
+      const head = document.createElement('div');
+      head.className = 'perm-head';
+      const name = document.createElement('span');
+      name.className = 'perm-name';
+      name.textContent = perm.name;
+      const tag = document.createElement('span');
+      tag.className = 'tag' + (perm.prompted ? ' warn' : ' ok');
+      tag.textContent = perm.prompted ? 'You are asked each time' : 'No prompt, no site access';
+      head.appendChild(name);
+      head.appendChild(tag);
+      const allows = document.createElement('p');
+      allows.className = 'perm-allows';
+      allows.textContent = 'Allows: ' + perm.allows;
+      const used = document.createElement('p');
+      used.className = 'perm-used';
+      used.textContent = 'Used for: ' + perm.used;
+      row.appendChild(head);
+      row.appendChild(allows);
+      row.appendChild(used);
+      box.appendChild(row);
+    });
+
+    /* one explainer per pattern type */
+    const patterns = [
+      ['This site (the default)', { type: 'origin', value: 'https://contoso-uat.sandbox.operations.dynamics.com' }],
+      ['This section only', { type: 'prefix', value: 'https://apps.contoso.com/tenant-a' }],
+      ['All subdomains', { type: 'host-suffix', value: 'contoso.com' }],
+      ['This host, any scheme', { type: 'host', value: 'uat.contoso.com' }],
+      ['Wildcard pattern', { type: 'wildcard', value: 'https://*-uat.contoso.com/*' }]
+    ];
+    const cases = document.getElementById('cases');
+    patterns.forEach(function (entry) {
+      const wrap = document.createElement('section');
+      wrap.className = 'case card';
+      const h = document.createElement('h3');
+      h.textContent = entry[0];
+      wrap.appendChild(h);
+      const target = document.createElement('div');
+      target.className = 'consent small';
+      wrap.appendChild(target);
+      cases.appendChild(wrap);
+      SL.renderConsent(target, SL.normalizePattern(entry[1]), { compact: false });
+    });
+  </script>
+</body>
+</html>

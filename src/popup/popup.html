@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Site Label</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="dot" id="brandDot"></span>
+      <span>Site Label</span>
+    </div>
+    <label class="switch" title="Turn all labels on or off">
+      <input type="checkbox" id="globalToggle">
+      <span class="track"><span class="knob"></span></span>
+    </label>
+  </header>
+
+  <section class="site">
+    <div class="site-host" id="currentHost">Loading…</div>
+    <div class="site-url" id="currentUrl"></div>
+    <div class="pill" id="statePill" hidden></div>
+  </section>
+
+  <!-- Page cannot be labelled (edge://, extension pages, local files) -->
+  <section id="unsupported" class="panel note" hidden>
+    <p>Site Label only works on ordinary web pages, so this one can't be labelled.</p>
+  </section>
+
+  <!-- Existing label -->
+  <section id="matchedPanel" class="panel" hidden>
+    <div class="row">
+      <div class="grow">
+        <div class="muted small">Labelled as</div>
+        <div class="matched-label" id="matchedLabel"></div>
+        <div class="muted small" id="matchedScope"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label-text">Colour</span>
+      <div class="swatches" id="matchedSwatches"></div>
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="matchedMode">Style</label>
+      <select id="matchedMode"></select>
+    </div>
+
+
+    <div class="field buddy-box" id="matchedBuddyBox" hidden>
+      <label class="label-text" for="matchedBuddy">Character</label>
+      <select id="matchedBuddy"></select>
+      <p class="muted small" id="matchedBuddyBlurb"></p>
+      <label class="check"><input type="checkbox" id="matchedBuddyChatter">
+        <span>Do its little routine now and then</span></label>
+      <label class="label-text" for="matchedBuddyInterval">How often <output id="matchedBuddyIntervalOut"></output></label>
+      <input type="range" id="matchedBuddyInterval" min="5" max="600" step="5">
+      <button type="button" id="matchedBuddySay" class="ghost full">Do it now</button>
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="matchedScale">Size <output id="matchedScaleOut"></output></label>
+      <input type="range" id="matchedScale" min="50" max="300" step="5">
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="matchedTransparency">Transparency <output id="matchedTransparencyOut"></output></label>
+      <input type="range" id="matchedTransparency" min="0" max="85" step="5">
+    </div>
+
+    <div class="field">
+      <label class="check"><input type="checkbox" id="matchedGlow"><span>Glow</span></label>
+      <label class="label-text" for="matchedGlowSpeed">Glow speed <output id="matchedGlowSpeedOut"></output></label>
+      <input type="range" id="matchedGlowSpeed" min="1" max="10" step="1">
+    </div>
+
+    <div class="field">
+      <label class="check"><input type="checkbox" id="matchedLock">
+        <span>Lock in place</span></label>
+      <p class="muted small" id="lockHint">Unlock to drag the label anywhere on the page.</p>
+      <button type="button" id="resetPosBtn" class="ghost full" hidden>Reset to default position</button>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="hideTabBtn" class="ghost">Hide on this tab</button>
+      <button type="button" id="editBtn" class="ghost">Edit…</button>
+      <button type="button" id="removeBtn" class="danger">Remove</button>
+    </div>
+  </section>
+
+  <!-- Add a new label -->
+  <form id="addForm" class="panel" hidden>
+    <div class="field">
+      <label class="label-text" for="labelText">Label text</label>
+      <input type="text" id="labelText" maxlength="60" autocomplete="off" placeholder="e.g. UAT">
+      <p class="muted small" id="guessNote" hidden></p>
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="groupSelect">Group</label>
+      <select id="groupSelect"></select>
+      <input type="text" id="newGroupName" maxlength="40" placeholder="New group name" hidden>
+    </div>
+
+    <div class="field">
+      <span class="label-text">Colour</span>
+      <div class="swatches" id="presetSwatches"></div>
+      <div class="row gap">
+        <label class="mini">Background <input type="color" id="bgColor" value="#c62828"></label>
+        <label class="mini">Text <input type="color" id="fgColor" value="#ffffff"></label>
+        <button type="button" id="saveColorBtn" class="tiny">Save colour</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="modeSelect">Style</label>
+      <select id="modeSelect"></select>
+    </div>
+
+
+    <div class="field buddy-box" id="addBuddyBox" hidden>
+      <label class="label-text" for="addBuddy">Character</label>
+      <select id="addBuddy"></select>
+      <p class="muted small" id="addBuddyBlurb"></p>
+      <label class="check"><input type="checkbox" id="addBuddyChatter">
+        <span>Do its little routine now and then</span></label>
+      <label class="label-text" for="addBuddyInterval">How often <output id="addBuddyIntervalOut"></output></label>
+      <input type="range" id="addBuddyInterval" min="5" max="600" step="5">
+      
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="sizeRange">Size <output id="sizeOut"></output></label>
+      <input type="range" id="sizeRange" min="50" max="300" step="5">
+    </div>
+
+    <div class="field">
+      <label class="label-text" for="transparencyRange">Transparency <output id="transparencyOut"></output></label>
+      <input type="range" id="transparencyRange" min="0" max="85" step="5">
+    </div>
+
+    <div class="field">
+      <label class="check"><input type="checkbox" id="glowToggle"><span>Glow</span></label>
+      <label class="label-text" for="glowSpeedRange">Glow speed <output id="glowSpeedOut"></output></label>
+      <input type="range" id="glowSpeedRange" min="1" max="10" step="1">
+    </div>
+
+    <div class="field">
+      <span class="label-text">Apply to</span>
+      <div id="scopeList" class="scopes"></div>
+    </div>
+
+    <div class="field">
+      <span class="label-text">Preview</span>
+      <div class="preview" id="preview"><span class="preview-page">page content</span></div>
+    </div>
+
+    <div class="consent small" id="consentNote"></div>
+
+    <div class="actions">
+      <button type="submit" id="addBtn" class="primary">Add label</button>
+    </div>
+    <p class="error small" id="addError" hidden></p>
+  </form>
+
+  <footer class="bar footer">
+    <button type="button" id="openOptions" class="link">All sites &amp; groups</button>
+    <button type="button" id="openImport" class="link">Import / export</button>
+  </footer>
+
+  <script src="../common/buddies.js"></script>
+  <script src="../common/schema.js"></script>
+  <script src="../common/matcher.js"></script>
+  <script src="../common/storage.js"></script>
+  <script src="../common/preview.js"></script>
+  <script src="../common/consent.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

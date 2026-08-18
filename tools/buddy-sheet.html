@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Site Label - character sheet</title>
+  <style>
+    body { margin: 0; padding: 20px; background: #f4f5f7; color: #1b1b1f;
+           font: 14px "Segoe UI", system-ui, sans-serif; }
+    h1 { font-size: 17px; margin: 0 0 14px; }
+    .grid { display: flex; flex-wrap: wrap; gap: 14px; }
+    .cell { width: 168px; background: #fff; border: 1px solid #e2e2e8; border-radius: 10px;
+            padding: 12px 10px 14px; text-align: center; }
+    .figure { width: 96px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+    .figure svg { width: 100%; height: auto; display: block;
+                  filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+    .card {
+      position: relative; margin-top: -21px; padding: 6px 14px;
+      background: #c62828; color: #fff; font-weight: 700; font-size: 14px;
+      letter-spacing: .04em; border: 2px solid var(--skin);
+      border-radius: 6px;
+      box-shadow: 0 7px 16px rgba(0,0,0,.45), 0 2px 4px rgba(0,0,0,.32);
+      transform: rotate(-3deg);
+    }
+    .name { margin-top: 12px; font-weight: 600; font-size: 12px; }
+    .blurb { color: #62636a; font-size: 11px; margin-top: 2px; }
+    .move { color: #1565c0; font-size: 11px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Buddy characters &mdash; as drawn on the page</h1>
+  <div class="grid" id="grid"></div>
+
+  <script src="../src/common/buddies.js"></script>
+  <script>
+    const grid = document.getElementById('grid');
+    SL.BUDDIES.forEach(function (b) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+
+      const figure = document.createElement('div');
+      figure.className = 'figure';
+      figure.appendChild(SL.buildBuddySvg(b.id));
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.setProperty('--skin', SL.buddyHandColor(b.id));
+      card.textContent = 'UAT';
+      figure.appendChild(card);
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = b.name;
+      const blurb = document.createElement('div');
+      blurb.className = 'blurb';
+      blurb.textContent = b.blurb;
+      const move = document.createElement('div');
+      move.className = 'move';
+      move.textContent = 'Move: ' + SL.TRICK_NAMES[b.trick];
+
+      cell.appendChild(figure);
+      cell.appendChild(name);
+      cell.appendChild(blurb);
+      cell.appendChild(move);
+      grid.appendChild(cell);
+    });
+  </script>
+</body>
+</html>
