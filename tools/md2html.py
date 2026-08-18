@@ -36,7 +36,19 @@ def convert(md, title, subtitle):
         elif ln.strip() == "":
             close_ul()
         else:
-            close_ul(); out.append("<p>%s</p>" % inline(ln.strip()))
+            # The markdown is hard-wrapped at 90 columns, so gather consecutive
+            # lines into one paragraph instead of emitting one per source line.
+            close_ul()
+            buf = [ln.strip()]
+            while (i + 1 < len(lines) and lines[i+1].strip()
+                   and not re.match(r"^#{1,4} ", lines[i+1])
+                   and not re.match(r"^[-*] ", lines[i+1].strip())
+                   and not lines[i+1].strip().startswith("|")
+                   and not lines[i+1].strip().startswith("```")
+                   and lines[i+1].strip() not in ("---", "***")):
+                i += 1
+                buf.append(lines[i].strip())
+            out.append("<p>%s</p>" % inline(" ".join(buf)))
         i += 1
     close_ul()
     body = "\n".join(out)

@@ -44,14 +44,10 @@
   <h1>Permissions</h1>
   <p class="sub">What Site Label can access, and why it asks.</p>
 </header>
-<p>Short version: Site Label installs with access to <strong>no websites at all</strong>, and asks for one</p>
-<p>site at a time as you add it. It has no networking code, so nothing it sees can leave your</p>
-<p>browser.</p>
+<p>Short version: Site Label installs with access to <strong>no websites at all</strong>, and asks for one site at a time as you add it. It has no networking code, so nothing it sees can leave your browser.</p>
 <hr>
 <h2>The four fixed permissions</h2>
-<p>These are declared in the manifest and are always held. <strong>None of them can see a website.</strong></p>
-<p>Because none of them carries a user-facing warning, Edge shows no permission prompt when you</p>
-<p>install Site Label.</p>
+<p>These are declared in the manifest and are always held. <strong>None of them can see a website.</strong> Because none of them carries a user-facing warning, Edge shows no permission prompt when you install Site Label.</p>
 <table><thead><tr><th>Permission</th><th>What it allows</th><th>What Site Label uses it for</th></tr></thead><tbody>
 <tr><td><code>storage</code></td><td>Save data on this computer</td><td>Keeps your labels, groups, colours and settings. The only place anything is stored, and it never leaves the browser.</td></tr>
 <tr><td><code>scripting</code></td><td>Run a script on pages the extension already has access to</td><td>Draws the label on sites you have added. It cannot reach a site you have not granted.</td></tr>
@@ -59,31 +55,21 @@
 <tr><td><code>contextMenus</code></td><td>Add a right-click menu item</td><td>Adds one entry, &quot;Label this site with Site Label&quot;.</td></tr>
 </tbody></table>
 <h2>The one permission you are asked about</h2>
-<p><code>optional_host_permissions: *://*/*</code> is declared as <strong>optional</strong>, which means it is never</p>
-<p>held on installation. Site Label cannot know in advance which sites you will want to</p>
-<p>label — they are usually private internal addresses — so instead of demanding access to</p>
-<p>everything up front, it asks for one specific site at the moment you add it.</p>
+<p><code>optional_host_permissions: *://*/*</code> is declared as <strong>optional</strong>, which means it is never held on installation. Site Label cannot know in advance which sites you will want to label — they are usually private internal addresses — so instead of demanding access to everything up front, it asks for one specific site at the moment you add it.</p>
 <h3>Why the prompt sounds alarming</h3>
 <p>Edge will say:</p>
 <p>&gt; Read and change your data on uat.contoso.com</p>
-<p>That wording is not chosen by Site Label and cannot be changed by any extension. It is the</p>
-<p>only sentence Edge has for host access, and it describes the <strong>ceiling</strong> of what the</p>
-<p>permission could technically allow — not what this extension does with it.</p>
-<p>Site Label shows you, immediately before that prompt appears, exactly which addresses are</p>
-<p>about to be granted and what they are used for.</p>
+<p>That wording is not chosen by Site Label and cannot be changed by any extension. It is the only sentence Edge has for host access, and it describes the <strong>ceiling</strong> of what the permission could technically allow — not what this extension does with it.</p>
+<p>Site Label shows you, immediately before that prompt appears, exactly which addresses are about to be granted and what they are used for.</p>
 <h3>What Site Label actually does with site access</h3>
 <p>Two things:</p>
-<p>1. Adds one element to the page to draw your label.</p>
-<p>2. Reads the page&#x27;s address, to work out whether one of your labels applies to it.</p>
-<p>That is all. It does not read or change the page&#x27;s content, text, form fields, passwords or</p>
-<p>cookies.</p>
+<p>1. Adds one element to the page to draw your label. 2. Reads the page&#x27;s address, to work out whether one of your labels applies to it.</p>
+<p>That is all. It does not read or change the page&#x27;s content, text, form fields, passwords or cookies.</p>
 <h3>What it does not do</h3>
 <ul>
 <li>No network requests of any kind. There is <strong>no</strong> <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>,</li>
 </ul>
-<p><code>EventSource</code> or <code>sendBeacon</code> anywhere in the shipped code, and no remote URL. This is</p>
-<p>enforced by a test (<code>tools/test-matcher.js</code>) that scans every shipped file and fails the</p>
-<p>build if any of them appears.</p>
+<p><code>EventSource</code> or <code>sendBeacon</code> anywhere in the shipped code, and no remote URL. This is enforced by a test (<code>tools/test-matcher.js</code>) that scans every shipped file and fails the build if any of them appears.</p>
 <ul>
 <li>No analytics, telemetry, crash reporting or tracking.</li>
 <li>No remote or generated code — no <code>eval</code>, no <code>new Function</code>, no external scripts. The</li>
@@ -110,8 +96,7 @@
 <ul>
 <li><strong>&quot;This section only&quot; narrows where the label appears, not what is granted.</strong> Browsers</li>
 </ul>
-<p>grant host access by site, not by folder, so the underlying permission still covers the</p>
-<p>whole site. If that matters to you, this option does not reduce the grant.</p>
+<p>grant host access by site, not by folder, so the underlying permission still covers the whole site. If that matters to you, this option does not reduce the grant.</p>
 <ul>
 <li><strong>Wildcard patterns cannot be expressed exactly</strong> in a browser permission. Edge is given</li>
 </ul>
@@ -125,20 +110,14 @@
 <ul>
 <li><code>edge://extensions</code> → Site Label → <strong>Site permissions</strong> gives you Edge&#x27;s own controls.</li>
 </ul>
-<p>Revoking access leaves your label rules intact; they simply stop being drawn until you grant</p>
-<p>access again.</p>
+<p>Revoking access leaves your label rules intact; they simply stop being drawn until you grant access again.</p>
 <h2>Verifying all of this yourself</h2>
-<p>The extension is a few small, readable files with no build step and no minification — what</p>
-<p>you load is what you read. The claims above are checkable:</p>
+<p>The extension is a few small, readable files with no build step and no minification — what you load is what you read. The claims above are checkable:</p>
 <pre><code>
 node tools/test-matcher.js
 </code></pre>
-<p>257 assertions, including the scan that fails if any networking or HTML-injection primitive</p>
-<p>is introduced.</p>
-<p>To read the source, the parts that touch the page are</p>
-<p><a href="src/content/label.js"><code>src/content/label.js</code></a> (the only code that runs on a website) and</p>
-<p><a href="src/background/service-worker.js"><code>src/background/service-worker.js</code></a> (which decides where</p>
-<p>that script is allowed to run).</p>
+<p>257 assertions, including the scan that fails if any networking or HTML-injection primitive is introduced.</p>
+<p>To read the source, the parts that touch the page are <a href="src/content/label.js"><code>src/content/label.js</code></a> (the only code that runs on a website) and <a href="src/background/service-worker.js"><code>src/background/service-worker.js</code></a> (which decides where that script is allowed to run).</p>
 <footer>Site Label &mdash; a Microsoft Edge extension. <a href="./">All documents</a></footer>
 </div>
 </body>
