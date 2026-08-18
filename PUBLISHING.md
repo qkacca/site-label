@@ -12,7 +12,7 @@ are already written and sit in `docs/`, ready for GitHub Pages.
 Create an empty repository on GitHub named `site-label` (public), then:
 
 ```bash
-git remote add origin https://github.com/<your-username>/site-label.git
+git remote add origin https://github.com/qkacca/site-label.git
 git branch -M main
 git push -u origin main
 ```
@@ -21,14 +21,14 @@ Then turn on Pages: **Settings → Pages → Source: Deploy from a branch → Br
 folder: `/docs` → Save.** It goes live in a minute or two at:
 
 ```
-https://<your-username>.github.io/site-label/privacy.html
+https://qkacca.github.io/site-label/privacy.html
 ```
 
 Open that URL and check it loads before using it. That is the value for the
 **Privacy policy URL** field.
 
 A support URL is useful too, and the repo gives you one for free:
-`https://github.com/<your-username>/site-label/issues`
+`https://github.com/qkacca/site-label/issues`
 
 ---
 

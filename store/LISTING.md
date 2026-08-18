@@ -143,12 +143,12 @@ extension does with the access, and how to withdraw it.
 
 **Privacy policy URL**
 ```
-[Host PRIVACY.md and paste the URL here — a GitHub Pages URL or a raw GitHub file is fine]
+https://qkacca.github.io/site-label/privacy.html
 ```
 
 **Support / contact**
 ```
-[your support email or repository issues URL]
+https://github.com/qkacca/site-label/issues
 ```
 
 ---
